@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世莉的首尔追星日记 - 终极完整版</title>
+    <!-- 引入 React 和 Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 预设样式 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+        .animate-bounce-subtle { animation: bounceSubtle 2s infinite; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes bounceSubtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        
+        /* 聊天气泡样式 */
+        .chat-container { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 1rem; }
+        .chat-bubble { position: relative; max-width: 85%; padding: 12px 16px; border-radius: 18px; line-height: 1.6; font-size: 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-left { background-color: #ffffff; color: #374151; border-top-left-radius: 4px; align-self: flex-start; border: 1px solid #e5e7eb; }
+        .chat-right { background-color: #ec4899; color: white; border-top-right-radius: 4px; align-self: flex-end; box-shadow: 0 2px 4px rgba(236, 72, 153, 0.2); }
+        .speaker-name { font-size: 0.75rem; color: #6b7280; margin-bottom: 4px; px-1; }
+        
+        /* 词汇表 */
+        .vocab-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+        
+        /* 语法总结卡片 */
+        .grammar-card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .grammar-title { font-weight: 700; color: #ec4899; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .grammar-content { color: #4b5563; font-size: 0.95rem; line-height: 1.6; }
+        .example-box { background: #fdf2f8; padding: 0.75rem; border-radius: 8px; margin-top: 0.75rem; border-left: 3px solid #ec4899; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- 图标组件 ---
+        const Icon = ({ children, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+        const Sparkles = ({ className }) => <Icon className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/></Icon>;
+        const MapPin = ({ className }) => <Icon className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></Icon>;
+        const Coffee = ({ className }) => <Icon className={className}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></Icon>;
+        const User = ({ className }) => <Icon className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+        const Music = ({ className }) => <Icon className={className}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></Icon>;
+        const BookOpen = ({ className }) => <Icon className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const ArrowRight = ({ className }) => <Icon className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></Icon>;
+        const CheckCircle = ({ className }) => <Icon className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const XCircle = ({ className }) => <Icon className={className}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></Icon>;
+        const RotateCcw = ({ className }) => <Icon className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
+        const Briefcase = ({ className }) => <Icon className={className}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></Icon>;
+        const MessageCircle = ({ className }) => <Icon className={className}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></Icon>;
+        const List = ({ className }) => <Icon className={className}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></Icon>;
+        const Home = ({ className }) => <Icon className={className}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+        const ShoppingBag = ({ className }) => <Icon className={className}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>;
+        const Gift = ({ className }) => <Icon className={className}><polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></Icon>;
+        const Utensils = ({ className }) => <Icon className={className}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></Icon>;
+        const Moon = ({ className }) => <Icon className={className}><path d="M12 3a6 6 0 0 0 9 9 9 0 1 1-9-9Z"/></Icon>;
+        const Compass = ({ className }) => <Icon className={className}><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></Icon>;
+        const Building = ({ className }) => <Icon className={className}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></Icon>;
+        const Search = ({ className }) => <Icon className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>;
+        const Navigation = ({ className }) => <Icon className={className}><polygon points="3 11 22 2 13 21 11 13 3 11"/></Icon>;
+        const Calendar = ({ className }) => <Icon className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+        const Heart = ({ className }) => <Icon className={className}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
+        const ChevronDown = ({ className }) => <Icon className={className}><path d="m6 9 6 6 6-6"/></Icon>;
+        const ChevronUp = ({ className }) => <Icon className={className}><path d="m18 15-6-6-6 6"/></Icon>;
+        const Book = ({ className }) => <Icon className={className}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
+
+        // --- 数据结构 (Global Scope) ---
+        const gameChapters = [
+            {
+                id: 1,
+                title: "第一章：初抵首尔",
+                description: "在仁川机场的初次相遇与介绍",
+                grammarSummary: [
+                    {
+                        title: "1. 肯定句：N입니다 vs N이에요/예요",
+                        content: "两者都表示'是...'。'입니다' 用于正式场合(如面试、机场)，'이에요/예요' 用于日常生活。",
+                        example: "저는 학생입니다. (正式) / 저는 학생이에요. (非正式)"
+                    },
+                    {
+                        title: "2. 否定句：N이/가 아닙니다/아니에요",
+                        content: "表示'不是...'。注意前面的名词如果有收音用 '이'，没有收音用 '가'。",
+                        example: "저는 의사가 아닙니다. / 저는 가수가 아니에요."
+                    },
+                    {
+                        title: "3. 助词：은/는 (主题)",
+                        content: "标示句子的主题。有收音用 '은'，无收音用 '는'。",
+                        example: "저는 중국 사람입니다. / 제 이름은 세리입니다."
+                    }
+                ],
+                sections: [
+                    {
+                        id: "1-1",
+                        title: "1-1 入境审查",
+                        location: "仁川机场入境处",
+                        icon: <User className="w-5 h-5"/>,
+                        description: "世莉刚下飞机，面对严厉的入境审查官。这是一个正式场合，请注意使用最尊敬的格式体。",
+                        grammarPoint: "N입니다/입니까?",
+                        vocab: [
+                            { word: "학생", meaning: "学生" }, { word: "선생님", meaning: "老师" },
+                            { word: "의사", meaning: "医生" }, { word: "요리사", meaning: "厨师" },
+                            { word: "중국", meaning: "中国" }, { word: "직업", meaning: "职业" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "审查官",
+                                npcText: "안녕하십니까? 여권을 보여 주세요.",
+                                options: [
+                                    { text: "네, 여기 있습니다.", isCorrect: true, explanation: "正确！'这里有(给您)'，非常标准的正式回答。" },
+                                    { text: "네, 여기 있어요.", isCorrect: false, explanation: "这是非正式敬语，入境审查时用 '입니다/습니까' 更得体。" },
+                                    { text: "응, 여기.", isCorrect: false, explanation: "绝对不行！这是半语，非常失礼。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "审查官",
+                                npcText: "직업이 무엇입니까? 학생입니까?",
+                                options: [
+                                    { text: "네, 저는 학생입니다.", isCorrect: true, explanation: "正确！问句是 '입니까?'，回答用 '입니다'。" },
+                                    { text: "네, 저는 학생이예요.", isCorrect: false, explanation: "混用了格式体和非正式体。" },
+                                    { text: "네, 제가 학생입니다.", isCorrect: false, explanation: "虽然语法没错，但自我介绍通常用主题助词 '저는' 而不是主语助词 '제가'。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "1-2",
+                        title: "1-2 偶遇同好",
+                        location: "行李提取处",
+                        icon: <MessageCircle className="w-5 h-5"/>,
+                        description: "取行李时，旁边一位背着演唱会周边的女生主动搭话了。这种场合可以使用比较亲切的非正式敬语。",
+                        grammarPoint: "N이에요/예요",
+                        vocab: [
+                            { word: "어느", meaning: "哪个" }, { word: "나라", meaning: "国家" },
+                            { word: "사람", meaning: "人" }, { word: "미국", meaning: "美国" },
+                            { word: "일본", meaning: "日本" }, { word: "반가워요", meaning: "很高兴" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "粉丝",
+                                npcText: "안녕하세요! 저도 콘서트 보러 왔어요. 혹시 중국 사람이에요?",
+                                options: [
+                                    { text: "네, 저는 중국 사람이에요.", isCorrect: true, explanation: "正确！'사람'有收音，后面加 '이에요'。" },
+                                    { text: "네, 저는 중국 사람예요.", isCorrect: false, explanation: "错误。有收音时不能用 '예요'。" },
+                                    { text: "네, 저는 중국 사람입니다.", isCorrect: false, explanation: "稍微有点太正式了，同龄粉丝之间用 '이에요' 更自然。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "粉丝",
+                                npcText: "아, 반가워요! 저는 일본 사람이에요.",
+                                options: [
+                                    { text: "아, 일본 사람이에요?", isCorrect: true, explanation: "正确！用升调表示反问确认。" },
+                                    { text: "아, 일본 사람이예요?", isCorrect: false, explanation: "拼写错误，是 '이에요' 不是 '이예요'。" },
+                                    { text: "아, 일본 사람입니까?", isCorrect: false, explanation: "太僵硬了，像在审问。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "1-3",
+                        title: "1-3 大巴闲聊",
+                        location: "机场大巴",
+                        icon: <Briefcase className="w-5 h-5"/>,
+                        description: "两人一起坐上了去市区的大巴。开始聊更多关于身份的话题。",
+                        grammarPoint: "N이/가 아니에요",
+                        vocab: [
+                            { word: "회사원", meaning: "公司职员" }, { word: "가수", meaning: "歌手" },
+                            { word: "배우", meaning: "演员" }, { word: "기자", meaning: "记者" },
+                            { word: "아니요", meaning: "不/不是" }, { word: "저", meaning: "我" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "粉丝",
+                                npcText: "세리 씨는 회사원이에요?",
+                                options: [
+                                    { text: "아니요, 저는 회사원이 아니에요.", isCorrect: true, explanation: "正确！'회사원'有收音，用 '이 아니에요'。" },
+                                    { text: "아니요, 저는 회사원가 아니에요.", isCorrect: false, explanation: "错误。有收音不能用 '가'。" },
+                                    { text: "아니요, 저는 회사원은 아니에요.", isCorrect: false, explanation: "语法没错(表示对比)，但初学者先掌握基础否定 '이/가 아니에요'。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "粉丝",
+                                npcText: "그럼 학생이에요?",
+                                options: [
+                                    { text: "네, 맞아요. 학생이에요.", isCorrect: true, explanation: "正确回答。" },
+                                    { text: "네, 학생이 아니에요.", isCorrect: false, explanation: "前面说了'是'，后面又'不是'，逻辑矛盾。" },
+                                    { text: "네, 학생이 있어요.", isCorrect: false, explanation: "意思是'有学生'，答非所问。" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "第二章：生存挑战",
+                description: "在便利店和咖啡厅的实战演练",
+                grammarSummary: [
+                    {
+                        title: "1. 存在句：N이/가 있어요/없어요",
+                        content: "表示'有/没有...'或'在/不在...'。有收音用 '이'，无收音用 '가'。",
+                        example: "편의점이 있어요. (有便利店) / 우유가 없어요. (没有牛奶)"
+                    },
+                    {
+                        title: "2. 指示代词：이거/그거/저거",
+                        content: "이거(这个，近)，그거(那个，听者近)，저거(那个，远处)。",
+                        example: "이거 주세요. (请给我这个)"
+                    },
+                    {
+                        title: "3. 连接词：하고",
+                        content: "表示'和'，用于连接两个名词，口语中非常常用。",
+                        example: "빵하고 우유 주세요. (请给我面包和牛奶)"
+                    }
+                ],
+                sections: [
+                    {
+                        id: "2-1",
+                        title: "2-1 初入便利店",
+                        location: "GS25 便利店",
+                        icon: <ShoppingBag className="w-5 h-5"/>,
+                        description: "到了市区，第一件事是买交通卡和水。请注意询问'有没有'的表达。",
+                        grammarPoint: "N이/가 있어요",
+                        vocab: [
+                            { word: "물", meaning: "水" }, { word: "우유", meaning: "牛奶" },
+                            { word: "빵", meaning: "面包" }, { word: "라면", meaning: "方便面" },
+                            { word: "티머니 카드", meaning: "交通卡" }, { word: "있다", meaning: "有/在" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "店员",
+                                npcText: "어서 오세요. 찾으시는 거 있으세요?",
+                                options: [
+                                    { text: "안녕하세요. 혹시 티머니 카드가 있어요?", isCorrect: true, explanation: "正确！'卡' (카드) 无收音，用 '가 있어요'。" },
+                                    { text: "안녕하세요. 혹시 티머니 카드를 있어요?", isCorrect: false, explanation: "错误！'있다' (有) 前面不能用宾语助词 '을/를'，必须用主语助词 '이/가'。" },
+                                    { text: "안녕하세요. 혹시 티머니 카드는 있어요?", isCorrect: false, explanation: "意思变成'别的没有，卡倒是有吗？'，语境不自然。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "店员",
+                                npcText: "네, 여기 있습니다.",
+                                options: [
+                                    { text: "감사합니다. 아, 물이 있어요?", isCorrect: true, explanation: "正确！'물' (水) 有收音，用 '이'。" },
+                                    { text: "감사합니다. 아, 물가 있어요?", isCorrect: false, explanation: "错误。有收音不能用 '가'。" },
+                                    { text: "감사합니다. 아, 물을 있어요?", isCorrect: false, explanation: "错误。'있다' 前面不能用 '을'。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "2-2",
+                        title: "2-2 明洞的小摊",
+                        location: "明洞街头",
+                        icon: <Gift className="w-5 h-5"/>,
+                        description: "世莉看到远处有个可爱的东西，想问问老板那是什么。注意指示代词的区别。",
+                        grammarPoint: "이거/그거/저거",
+                        vocab: [
+                            { word: "이거", meaning: "这个(近)" }, { word: "그거", meaning: "那个(听者近)" },
+                            { word: "저거", meaning: "那个(远)" }, { word: "모자", meaning: "帽子" },
+                            { word: "가방", meaning: "包" }, { word: "안경", meaning: "眼镜" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "世莉",
+                                npcText: "(指着远处挂着的帽子) ______, ______?",
+                                options: [
+                                    { text: "아저씨, 저거는 뭐예요?", isCorrect: true, explanation: "正确！东西离两个人都远，用 '저거'。" },
+                                    { text: "아저씨, 이거는 뭐예요?", isCorrect: false, explanation: "错误。'이거' 是指离自己近的东西。" },
+                                    { text: "아저씨, 그거는 뭐예요?", isCorrect: false, explanation: "错误。'그거' 是指离听话人近的东西。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "老板",
+                                npcText: "아, 저거요? 저거는 모자예요. 예쁘죠?",
+                                options: [
+                                    { text: "네, 예뻐요. 그럼 이거는 뭐예요?", isCorrect: true, explanation: "正确！指着手边近处的东西问 '이거'。" },
+                                    { text: "네, 예뻐요. 그럼 저거는 뭐예요?", isCorrect: false, explanation: "语境假设你现在指着眼前的东西。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "2-3",
+                        title: "2-3 咖啡店点单",
+                        location: "Mega Coffee",
+                        icon: <Coffee className="w-5 h-5"/>,
+                        description: "世莉又渴又饿，想同时点咖啡和三明治。练习连接词。",
+                        grammarPoint: "N하고 N",
+                        vocab: [
+                            { word: "아메리카노", meaning: "美式咖啡" }, { word: "라떼", meaning: "拿铁" },
+                            { word: "샌드위치", meaning: "三明治" }, { word: "케이크", meaning: "蛋糕" },
+                            { word: "하고", meaning: "和(口语)" }, { word: "주세요", meaning: "请给我" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "店员",
+                                npcText: "주문하시겠어요?",
+                                options: [
+                                    { text: "아메리카노하고 샌드위치 주세요.", isCorrect: true, explanation: "正确！'하고' 表示 '和'。" },
+                                    { text: "아메리카노가 샌드위치 주세요.", isCorrect: false, explanation: "错误。'가' 是主语助词。" },
+                                    { text: "아메리카노를 샌드위치 주세요.", isCorrect: false, explanation: "错误。缺少连接词。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "店员",
+                                npcText: "드시고 가세요?",
+                                options: [
+                                    { text: "아니요, 가져갈 거예요.", isCorrect: true, explanation: "意思是'不，我要带走'。" },
+                                    { text: "네, 없어요.", isCorrect: false, explanation: "答非所问。" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "第三章：首尔生活",
+                description: "日常活动、地点与否定表达",
+                grammarSummary: [
+                    {
+                        title: "1. 宾格助词：을/를",
+                        content: "加在名词后，表示动作的对象。有收音用 '을'，无收音用 '를'。",
+                        example: "밥을 먹어요. (吃饭) / 커피를 마셔요. (喝咖啡)"
+                    },
+                    {
+                        title: "2. 动作场所：에서",
+                        content: "表示在某地进行某个动作。区别于 '에' (存在/方向)。",
+                        example: "카페에서 친구를 만나요. (在咖啡店见朋友)"
+                    },
+                    {
+                        title: "3. 否定：안 V",
+                        content: "在动词或形容词前加 '안' 表示否定。",
+                        example: "김치를 안 먹어요. (不吃泡菜)"
+                    }
+                ],
+                sections: [
+                    {
+                        id: "3-1",
+                        title: "3-1 汉江野餐",
+                        location: "汉江公园",
+                        icon: <Utensils className="w-5 h-5"/>,
+                        description: "世莉和新朋友在汉江边。朋友问她在做什么动作。",
+                        grammarPoint: "N을/를 V",
+                        vocab: [
+                            { word: "먹다", meaning: "吃" }, { word: "마시다", meaning: "喝" },
+                            { word: "읽다", meaning: "读" }, { word: "보다", meaning: "看" },
+                            { word: "라면", meaning: "拉面" }, { word: "책", meaning: "书" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "朋友",
+                                npcText: "세리 씨, 지금 뭐 해요?",
+                                options: [
+                                    { text: "저는 라면을 먹어요.", isCorrect: true, explanation: "正确！'라면' + '을'(宾语助词) + '먹어요'。" },
+                                    { text: "저는 라면이 먹어요.", isCorrect: false, explanation: "错误。吃的对象要用 '을/를'。" },
+                                    { text: "저는 라면을 먹다.", isCorrect: false, explanation: "错误。对话中要变成 '먹어요'。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "朋友",
+                                npcText: "맛있어요? 저도 한 입만 주세요.",
+                                options: [
+                                    { text: "네, 드세요.", isCorrect: true, explanation: "请吃。" },
+                                    { text: "네, 먹어요.", isCorrect: false, explanation: "这是自己在吃的意思。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "3-2",
+                        title: "3-2 弘大探店",
+                        location: "弘大购物街",
+                        icon: <MapPin className="w-5 h-5"/>,
+                        description: "逛街时，房东打来电话问世莉在哪里做什么。",
+                        grammarPoint: "N에서 V",
+                        vocab: [
+                            { word: "만나다", meaning: "见面" }, { word: "쇼핑하다", meaning: "购物" },
+                            { word: "공부하다", meaning: "学习" }, { word: "운동하다", meaning: "运动" },
+                            { word: "백화점", meaning: "百货店" }, { word: "도서관", meaning: "图书馆" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "房东",
+                                npcText: "세리 씨, 지금 어디예요?",
+                                options: [
+                                    { text: "지금 홍대에 있어요.", isCorrect: true, explanation: "回答存在的位置用 '에'。" },
+                                    { text: "지금 홍대에서 있어요.", isCorrect: false, explanation: "错误。'있다' (在) 前面只能用 '에'。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "房东",
+                                npcText: "거기에서 뭐 해요?",
+                                options: [
+                                    { text: "저는 친구를 만나요.", isCorrect: true, explanation: "正确。" },
+                                    { text: "저는 친구를 만나요에서.", isCorrect: false, explanation: "语序错误。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "房东",
+                                npcText: "어디에서 만나요?",
+                                options: [
+                                    { text: "카페에서 만나요.", isCorrect: true, explanation: "正确！在某地做某事（见面），地点用 '에서'。" },
+                                    { text: "카페에 만나요.", isCorrect: false, explanation: "错误。动作发生的地点要用 '에서'。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "3-3",
+                        title: "3-3 拒绝夜宵",
+                        location: "宿舍",
+                        icon: <Moon className="w-5 h-5"/>,
+                        description: "晚上室友想吃炸鸡，但世莉在减肥。练习否定句。",
+                        grammarPoint: "안 V",
+                        vocab: [
+                            { word: "치킨", meaning: "炸鸡" }, { word: "피자", meaning: "披萨" },
+                            { word: "자다", meaning: "睡觉" }, { word: "쉬다", meaning: "休息" },
+                            { word: "안", meaning: "不" }, { word: "야식", meaning: "夜宵" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "室友",
+                                npcText: "세리 씨, 우리 치킨 먹을까요?",
+                                options: [
+                                    { text: "아니요, 저는 안 먹어요.", isCorrect: true, explanation: "正确！'안' + 动词。" },
+                                    { text: "아니요, 저는 먹어요 안.", isCorrect: false, explanation: "错误。'안' 必须在动词前。" },
+                                    { text: "아니요, 저는 못 먹어요.", isCorrect: false, explanation: "'못' 是'不能'，'안' 是'不吃'。这里选 '안' 更符合不想吃的语境。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "室友",
+                                npcText: "왜요? 배 안 고파요?",
+                                options: [
+                                    { text: "네, 저는 지금 자요. 내일 봐요.", isCorrect: true, explanation: "我要睡了，明天见。" },
+                                    { text: "네, 저는 치킨을 먹어요.", isCorrect: false, explanation: "逻辑矛盾。" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "第四章：寻找方向",
+                description: "问路、方位与移动",
+                grammarSummary: [
+                    {
+                        title: "1. 确认地点：여기가 N이에요/예요?",
+                        content: "询问'这里是...吗？'。注意这里作主语，用 '여기가' 比 '여기는' 更自然。",
+                        example: "여기가 학교예요? (这里是学校吗？)"
+                    },
+                    {
+                        title: "2. 具体方位：N 위/아래/앞/뒤/옆에",
+                        content: "表示在上/下/前/后/旁边。注意最后要加存在助词 '에'。",
+                        example: "편의점 옆에 있어요. (在便利店旁边)"
+                    },
+                    {
+                        title: "3. 移动方向：N에 가요/와요",
+                        content: "去/来某地，目的地后用 '에'。不要混淆为 '에서'。",
+                        example: "학교에 가요. (去学校) / 집에 와요. (回家)"
+                    }
+                ],
+                sections: [
+                    {
+                        id: "4-1",
+                        title: "4-1 确认集合点",
+                        location: "弘大某处",
+                        icon: <Building className="w-5 h-5"/>,
+                        description: "演唱会前，要和粉丝群的朋友集合。看着眼前的建筑，有点不确定。",
+                        grammarPoint: "여기가 N이에요?",
+                        vocab: [
+                            { word: "여기", meaning: "这里" }, { word: "거기", meaning: "那里" },
+                            { word: "기숙사", meaning: "宿舍" }, { word: "호텔", meaning: "酒店" },
+                            { word: "병원", meaning: "医院" }, { word: "약국", meaning: "药店" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "路人",
+                                npcText: "네? 무슨 일이세요?",
+                                options: [
+                                    { text: "실례합니다. 혹시 여기가 기숙사예요?", isCorrect: true, explanation: "正确！'这里是宿舍吗？'" },
+                                    { text: "실례합니다. 혹시 여기가 기숙사에요?", isCorrect: false, explanation: "拼写错误，是 '예요'。" },
+                                    { text: "실례합니다. 혹시 여기가 기숙사있어요?", isCorrect: false, explanation: "错误。语境是确认地点身份，不是问有没有。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "路人",
+                                npcText: "아니요, 여기는 호텔이에요. 기숙사는 저기예요.",
+                                options: [
+                                    { text: "아, 감사합니다. 안녕히 계세요.", isCorrect: true, explanation: "礼貌道谢。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "4-2",
+                        title: "4-2 地铁口的迷茫",
+                        location: "合井站 9号出口",
+                        icon: <Compass className="w-5 h-5"/>,
+                        description: "人太多了，找不到朋友。需要准确描述自己在哪里。",
+                        grammarPoint: "N 위치에",
+                        vocab: [
+                            { word: "앞", meaning: "前面" }, { word: "뒤", meaning: "后面" },
+                            { word: "옆", meaning: "旁边" }, { word: "위", meaning: "上面" },
+                            { word: "아래/밑", meaning: "下面" }, { word: "역", meaning: "车站" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "朋友(电话)",
+                                npcText: "세리 씨, 지금 어디예요? 안 보여요.",
+                                options: [
+                                    { text: "저는 지금 편의점 옆에 있어요.", isCorrect: true, explanation: "正确！'便利店' + '旁边' + '에' + '在'。" },
+                                    { text: "저는 지금 편의점 옆에서 있어요.", isCorrect: false, explanation: "错误。'在' (存在) 的地点助词必须用 '에'。" },
+                                    { text: "저는 지금 편의점 옆을 있어요.", isCorrect: false, explanation: "错误。助词错误。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "朋友(电话)",
+                                npcText: "아, 편의점이요? 알겠어요. 금방 갈게요.",
+                                options: [
+                                    { text: "네, 기다릴게요.", isCorrect: true, explanation: "好的，我等你。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "4-3",
+                        title: "4-3 奔向场馆",
+                        location: "街道",
+                        icon: <Navigation className="w-5 h-5"/>,
+                        description: "终于集合完毕！大家一起前往演唱会场馆。",
+                        grammarPoint: "N에 가요",
+                        vocab: [
+                            { word: "가다", meaning: "去" }, { word: "오다", meaning: "来" },
+                            { word: "다니다", meaning: "来往/上(学/班)" }, { word: "공연장", meaning: "演出场馆" },
+                            { word: "집", meaning: "家" }, { word: "우리", meaning: "我们" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "路人",
+                                npcText: "(看着兴奋的一群人) 어디에 가요?",
+                                options: [
+                                    { text: "우리는 공연장에 가요.", isCorrect: true, explanation: "正确！去往目的地，助词用 '에'。" },
+                                    { text: "우리는 공연장에서 가요.", isCorrect: false, explanation: "错误。'에서' 表示出发地或动作场所，去目的地用 '에'。" },
+                                    { text: "우리는 공연장을 가요.", isCorrect: false, explanation: "虽然口语偶用，但标准语法是 '에 가다'。" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 5,
+                title: "第五章：约定与回忆",
+                description: "日期、时间规划与描述过去的经历",
+                grammarSummary: [
+                    {
+                        title: "1. 日期与星期：N월 N일 / N요일",
+                        content: "注意6月(유월)和10月(시월)的特殊发音。",
+                        example: "10월 20일 금요일 (10月20日 星期五)"
+                    },
+                    {
+                        title: "2. 时间助词：N에",
+                        content: "接在时间名词后，表示'在...时间'。注意：오늘(今天), 내일(明天), 어제(昨天), 지금(现在) 后通常不加 에。",
+                        example: "금요일에 만나요. (周五见)"
+                    },
+                    {
+                        title: "3. 过去时：V-았/었어요",
+                        content: "表示过去发生的动作或状态。元音是ㅏ,ㅗ用-았어요，其他用-었어요，하다变했어요。",
+                        example: "보았어요 -> 봤어요 (看了) / 먹었어요 (吃了) / 공부했어요 (学习了)"
+                    },
+                    {
+                        title: "4. 连接词：V-고",
+                        content: "连接两个动词/句子，表示顺承'然后...'或并列'既...又...'。",
+                        example: "친구를 만나고 밥을 먹었어요. (见了朋友，然后吃了饭)"
+                    }
+                ],
+                sections: [
+                    {
+                        id: "5-1",
+                        title: "5-1 特别的日子",
+                        location: "KakaoTalk 聊天室",
+                        icon: <Calendar className="w-5 h-5"/>,
+                        description: "民哲问世莉的生日和粉丝见面会的日期。注意月份的特殊发音。",
+                        grammarPoint: "日期 (6월/10월)",
+                        vocab: [
+                            { word: "유월(6월)", meaning: "六月" }, { word: "시월(10월)", meaning: "十月" },
+                            { word: "생일", meaning: "生日" }, { word: "언제", meaning: "什么时候" },
+                            { word: "팬미팅", meaning: "见面会" }, { word: "며칠", meaning: "几号" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "세리 씨, 생일이 언제예요? 10월이에요?",
+                                options: [
+                                    { text: "네, 시월 4일이에요.", isCorrect: true, explanation: "正确！10月读作/写作[시월]，4日是[사일]。" },
+                                    { text: "네, 십월 4일이에요.", isCorrect: false, explanation: "错误。10月在日期中必须读作[시월]。" },
+                                    { text: "네, 시월 4일이예요.", isCorrect: false, explanation: "错误。'日' (일) 有收音，后面应该是 '이에요'。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "그럼 팬미팅은 언제예요?",
+                                options: [
+                                    { text: "유월 20일이에요.", isCorrect: true, explanation: "正确！6月读作/写作[유월]。" },
+                                    { text: "육월 20일이에요.", isCorrect: false, explanation: "错误。6月是特殊发音。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "5-2",
+                        title: "5-2 约定时间",
+                        location: "KakaoTalk 聊天室",
+                        icon: <Coffee className="w-5 h-5"/>,
+                        description: "确定了日期，接下来要约具体的见面时间。练习助词 '에'。",
+                        grammarPoint: "时间名词 + 에",
+                        vocab: [
+                            { word: "무슨 요일", meaning: "星期几" }, { word: "주말", meaning: "周末" },
+                            { word: "금요일", meaning: "周五" }, { word: "오후", meaning: "下午" },
+                            { word: "만나다", meaning: "见面" }, { word: "좋다", meaning: "好" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "우리 이번 주말에 만날까요?",
+                                options: [
+                                    { text: "좋아요. 주말에 만나요.", isCorrect: true, explanation: "正确！'주말'(周末) + '에'(时间助词)。" },
+                                    { text: "좋아요. 주말 만나요.", isCorrect: false, explanation: "口语可省略，但练习时请使用完整助词 '에'。" },
+                                    { text: "좋아요. 주말이 만나요.", isCorrect: false, explanation: "错误。'이' 是主语助词。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "토요일 오후 2시는 어때요?",
+                                options: [
+                                    { text: "네, 2시에 만나요.", isCorrect: true, explanation: "正确！具体时间点后也要加 '에'。" },
+                                    { text: "네, 2시에서 만나요.", isCorrect: false, explanation: "错误。'에서' 是动作场所，时间点用 '에'。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "5-3",
+                        title: "5-3 昨天的回忆",
+                        location: "咖啡厅",
+                        icon: <Music className="w-5 h-5"/>,
+                        description: "见面了！民哲问世莉昨天做了什么。练习过去时。",
+                        grammarPoint: "V-았/었어요 (过去时)",
+                        vocab: [
+                            { word: "어제", meaning: "昨天" }, { word: "하다", meaning: "做" },
+                            { word: "공부하다", meaning: "学习" }, { word: "쇼핑하다", meaning: "购物" },
+                            { word: "보다", meaning: "看" }, { word: "샀어요", meaning: "买了" }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "세리 씨, 어제 뭐 했어요?",
+                                options: [
+                                    { text: "한국어를 공부했어요.", isCorrect: true, explanation: "正确！공부하다 -> 공부했어요 (过去时)。" },
+                                    { text: "한국어를 공부해요.", isCorrect: false, explanation: "这是现在时，问的是'昨天'。" },
+                                    { text: "한국어를 공부요.", isCorrect: false, explanation: "语法错误。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "쇼핑은 안 했어요?",
+                                options: [
+                                    { text: "네, 옷을 샀어요.", isCorrect: true, explanation: "正确！사다(买) -> 샀어요(买了)。" },
+                                    { text: "네, 옷을 사요.", isCorrect: false, explanation: "现在时。" },
+                                    { text: "네, 옷을 샀다.", isCorrect: false, explanation: "这是书面基本阶，对话中要用尊敬阶。" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: "5-4",
+                        title: "5-4 充实的周末",
+                        location: "咖啡厅",
+                        icon: <List className="w-5 h-5"/>,
+                        description: "世莉描述周末的行程，做完这个又做了那个。练习连接词。",
+                        grammarPoint: "V-고 (动作顺承)",
+                        vocab: [
+                            { word: "영화", meaning: "电影" }, { word: "보다", meaning: "看" },
+                            { word: "밥", meaning: "饭" }, { word: "먹다", meaning: "吃" },
+                            { word: "그리고", meaning: "还有/然后" }, { word: "-고", meaning: "...然后..." }
+                        ],
+                        stages: [
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "주말에는 보통 뭐 해요?",
+                                options: [
+                                    { text: "영화를 보고 밥을 먹어요.", isCorrect: true, explanation: "正确！'보다'(看) + '-고' -> '보고' (看了电影然后...)" },
+                                    { text: "영화를 봐고 밥을 먹어요.", isCorrect: false, explanation: "错误。连接词 '-고' 直接加在词干后，不需要变音。" },
+                                    { text: "영화를 봐서 밥을 먹어요.", isCorrect: false, explanation: "'-어서' 表示强因果或紧密联系，单纯罗列习惯用 '-고'。" }
+                                ]
+                            },
+                            {
+                                npcSpeaker: "民哲",
+                                npcText: "와, 재미있겠네요. 누구랑 가요?",
+                                options: [
+                                    { text: "친구하고 가요.", isCorrect: true, explanation: "和朋友一起去。" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // --- 章节菜单组件 (外置) ---
+        const ChapterMenu = ({ chapter, selectSection, showSummary }) => {
+            const [isOpen, setIsOpen] = useState(true);
+            return (
+                <div className="mb-4 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <button 
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="w-full p-4 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                        <div className="text-left">
+                            <h3 className="font-bold text-gray-800">{chapter.title}</h3>
+                            <p className="text-xs text-gray-500">{chapter.description}</p>
+                        </div>
+                        {isOpen ? <ChevronUp className="w-5 h-5 text-gray-400"/> : <ChevronDown className="w-5 h-5 text-gray-400"/>}
+                    </button>
+                    
+                    {isOpen && (
+                        <div className="divide-y divide-gray-100">
+                            {chapter.sections.map((section, idx) => (
+                                <button
+                                    key={section.id}
+                                    onClick={() => selectSection(chapter.id, idx)}
+                                    className="w-full p-4 pl-6 flex items-center gap-4 hover:bg-pink-50 transition-colors text-left group"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center group-hover:bg-pink-100 group-hover:text-pink-500 transition-colors">
+                                        {section.icon}
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-gray-700 text-sm">{section.title}</div>
+                                        <div className="text-xs text-gray-400 mt-0.5">{section.grammarPoint}</div>
+                                    </div>
+                                    <ArrowRight className="w-4 h-4 ml-auto text-gray-300 group-hover:text-pink-400"/>
+                                </button>
+                            ))}
+                            {/* 语法总结按钮 */}
+                            <button
+                                onClick={() => showSummary(chapter.id)}
+                                className="w-full p-4 pl-6 flex items-center gap-4 bg-yellow-50 hover:bg-yellow-100 transition-colors text-left group"
+                            >
+                                <div className="w-8 h-8 rounded-full bg-yellow-200 text-yellow-700 flex items-center justify-center">
+                                    <Book className="w-4 h-4"/>
+                                </div>
+                                <div className="font-medium text-yellow-800 text-sm">📘 本章语法总结</div>
+                                <ArrowRight className="w-4 h-4 ml-auto text-yellow-600"/>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- App 主组件 ---
+        const App = () => {
+            const [view, setView] = useState('intro'); // intro, menu, game
+            const [currentLevel, setCurrentLevel] = useState(1); // Chapter ID
+            const [currentStage, setCurrentStage] = useState(0); // Section Index
+            const [internalStep, setInternalStep] = useState(0); // Dialogue Step Index
+            
+            const [dialogueHistory, setDialogueHistory] = useState([]);
+            const [feedback, setFeedback] = useState(null);
+            const [showVocab, setShowVocab] = useState(false);
+            const [score, setScore] = useState(0);
+            const [selectedOptionIdx, setSelectedOptionIdx] = useState(null);
+            
+            const messagesEndRef = useRef(null);
+
+            // Derived Data
+            const currentChapter = gameChapters.find(c => c.id === currentLevel);
+            // Check if we are in Summary View (stage index == sections length)
+            const isSummaryView = currentChapter && currentStage === currentChapter.sections.length;
+            const currentSection = currentChapter && !isSummaryView ? currentChapter.sections[currentStage] : null;
+            const currentDialogueStep = currentSection ? currentSection.stages[internalStep] : null;
+
+            // Auto-scroll effect
+            useEffect(() => {
+                if (messagesEndRef.current) {
+                    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+                }
+            }, [dialogueHistory, feedback]);
+
+            // Initialize Dialogue when entering a new section
+            useEffect(() => {
+                if (view === 'game' && currentSection && !isSummaryView) {
+                    if (internalStep === 0 && dialogueHistory.length === 0) {
+                        setDialogueHistory([{
+                            speaker: currentSection.stages[0].npcSpeaker,
+                            text: currentSection.stages[0].npcText,
+                            type: 'npc'
+                        }]);
+                    }
+                }
+            }, [view, currentSection, isSummaryView, internalStep, dialogueHistory.length]);
+
+            const handleOptionClick = (option, idx) => {
+                if (feedback?.type === 'correct') return;
+                setSelectedOptionIdx(idx);
+
+                if (option.isCorrect) {
+                    setFeedback({ type: 'correct', message: option.explanation });
+                    setScore(prev => prev + 1);
+                    setDialogueHistory(prev => [...prev, {
+                        speaker: "世莉",
+                        text: option.text,
+                        type: 'player'
+                    }]);
+                } else {
+                    setFeedback({ type: 'incorrect', message: option.explanation });
+                }
+            };
+
+            const nextStep = () => {
+                setFeedback(null);
+                setSelectedOptionIdx(null);
+
+                // 1. Is there another step in this section?
+                if (internalStep < currentSection.stages.length - 1) {
+                    const nextStepIdx = internalStep + 1;
+                    setInternalStep(nextStepIdx);
+                    setDialogueHistory(prev => [...prev, {
+                        speaker: currentSection.stages[nextStepIdx].npcSpeaker,
+                        text: currentSection.stages[nextStepIdx].npcText,
+                        type: 'npc'
+                    }]);
+                } else {
+                    // 2. No more steps, move to next section (or summary)
+                    setInternalStep(0);
+                    setDialogueHistory([]); // Clear history for next section
+                    setCurrentStage(prev => prev + 1); 
+                    // Note: After this update, currentStage will equal sections.length, triggering Summary View logic
+                    setShowVocab(false);
+                }
+            };
+
+            const finishChapter = () => {
+                setView('menu');
+            };
+
+            const startGame = () => {
+                setView('menu');
+            };
+
+            const selectSection = (chapterId, sectionIdx) => {
+                setCurrentLevel(chapterId);
+                setCurrentStage(sectionIdx);
+                setInternalStep(0);
+                setDialogueHistory([]);
+                setFeedback(null);
+                setShowVocab(false);
+                setSelectedOptionIdx(null);
+                setView('game');
+            };
+
+            const showSummary = (chapterId) => {
+                setCurrentLevel(chapterId);
+                const chapter = gameChapters.find(c => c.id === chapterId);
+                setCurrentStage(chapter.sections.length); // Trigger summary view
+                setView('game');
+            };
+
+            const goToMenu = () => {
+                setView('menu');
+                setFeedback(null);
+                setSelectedOptionIdx(null);
+            };
+
+            // --- Renders ---
+
+            if (view === 'intro') {
+                return (
+                    <div className="min-h-screen bg-pink-50 flex flex-col items-center justify-center p-6 font-sans">
+                        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border-4 border-pink-200">
+                            <div className="mb-6 flex justify-center">
+                                <div className="bg-pink-100 p-4 rounded-full">
+                                    <Sparkles className="w-12 h-12 text-pink-500" />
+                                </div>
+                            </div>
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">世莉的首尔追星日记</h1>
+                            <h2 className="text-xl text-pink-500 font-semibold mb-6">세리의 서울 모험</h2>
+                            <p className="text-gray-600 mb-8 leading-relaxed">
+                                为初学者量身定制的韩语交互故事。<br/>
+                                <span className="text-sm text-gray-400">完整语法 · 严谨助词 · 自然对话</span>
+                            </p>
+                            <button 
+                                onClick={startGame}
+                                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                            >
+                                开始旅程 <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (view === 'menu') {
+                return (
+                    <div className="min-h-screen bg-gray-100 py-10 px-4 flex justify-center">
+                        <div className="w-full max-w-lg">
+                            <div className="flex items-center gap-2 mb-6 text-gray-800">
+                                <button onClick={() => setView('intro')} className="p-2 hover:bg-gray-200 rounded-full"><Home className="w-6 h-6"/></button>
+                                <h1 className="text-2xl font-bold">章节选择</h1>
+                            </div>
+                            <div>
+                                {gameChapters.map(chapter => (
+                                    <ChapterMenu 
+                                        key={chapter.id} 
+                                        chapter={chapter} 
+                                        selectSection={selectSection} 
+                                        showSummary={showSummary}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Summary View
+            if (isSummaryView && currentChapter) {
+                return (
+                    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-6 px-4 md:py-10">
+                        <div className="w-full max-w-lg mb-4 flex items-center justify-between">
+                            <button onClick={goToMenu} className="bg-white px-3 py-2 rounded-lg shadow-sm text-gray-600 text-xs font-bold flex items-center gap-2"><List className="w-4 h-4"/> 目录</button>
+                            <span className="text-gray-500 text-xs font-bold bg-white px-3 py-2 rounded-lg shadow-sm">{currentChapter.title}</span>
+                        </div>
+                        <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-gray-100 flex flex-col h-[80vh] overflow-hidden">
+                            <div className="bg-yellow-400 p-6 text-white shrink-0">
+                                <h2 className="text-xl font-bold flex items-center gap-2"><Book className="w-6 h-6"/> 语法核心笔记</h2>
+                                <p className="text-yellow-100 text-sm mt-1">恭喜完成本章！复习一下重点吧。</p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                                {currentChapter.grammarSummary.map((item, idx) => (
+                                    <div key={idx} className="grammar-card">
+                                        <h3 className="grammar-title">{item.title}</h3>
+                                        <p className="grammar-content">{item.content}</p>
+                                        <div className="example-box">
+                                            <p className="text-sm text-gray-600 italic">{item.example}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="p-4 bg-white border-t border-gray-100 shrink-0">
+                                <button onClick={finishChapter} className="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-all">
+                                    完成并返回目录
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Game View
+            if (!currentSection) return null;
+
+            return (
+                <div className="min-h-screen bg-gray-100 flex flex-col items-center py-6 px-4 md:py-10">
+                    <div className="w-full max-w-lg mb-4 flex items-center justify-between">
+                        <button 
+                            onClick={goToMenu} 
+                            className="bg-white px-3 py-2 rounded-lg shadow-sm text-gray-600 text-xs font-bold flex items-center gap-2 hover:text-pink-500"
+                        >
+                            <List className="w-4 h-4" /> 目录
+                        </button>
+                        <span className="text-gray-500 text-xs font-bold bg-white px-3 py-2 rounded-lg shadow-sm">
+                            {currentChapter.title}
+                        </span>
+                    </div>
+
+                    <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 flex flex-col h-[85vh]">
+                        
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-pink-400 to-purple-500 p-6 text-white relative shrink-0">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="inline-block bg-white/20 backdrop-blur-md px-2 py-1 rounded text-[10px] font-medium mb-2">
+                                        {currentSection.location}
+                                    </div>
+                                    <h2 className="text-xl font-bold">{currentSection.title}</h2>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] opacity-80">目标语法</div>
+                                    <div className="text-sm font-bold">{currentSection.grammarPoint}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Scrollable Content Area */}
+                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                            
+                            {/* Context Card (Show only at start) */}
+                            {internalStep === 0 && dialogueHistory.length <= 1 && (
+                                <div className="mb-6 p-4 bg-white rounded-xl border border-blue-100 shadow-sm text-sm text-gray-600 leading-relaxed animate-fade-in">
+                                    <p className="font-bold text-blue-500 mb-2 flex items-center gap-2 text-xs uppercase tracking-wide">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> Context
+                                    </p>
+                                    {currentSection.description}
+                                </div>
+                            )}
+
+                            {/* Vocab Toggle */}
+                            <div className="flex justify-end mb-4">
+                                <button 
+                                    onClick={() => setShowVocab(!showVocab)}
+                                    className="text-xs text-pink-500 font-bold flex items-center gap-1 hover:bg-pink-50 px-2 py-1 rounded transition-colors"
+                                >
+                                    <BookOpen className="w-3 h-3" /> 
+                                    {showVocab ? "隐藏生词" : "查看生词"}
+                                </button>
+                            </div>
+
+                            {/* Vocab Panel */}
+                            {showVocab && (
+                                <div className="bg-white p-4 rounded-xl mb-6 border border-yellow-200 shadow-sm animate-fade-in">
+                                    <div className="vocab-grid">
+                                        {currentSection.vocab.map((v, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 text-sm">
+                                                <span className="font-bold text-gray-800">{v.word}</span>
+                                                <span className="text-gray-300">|</span>
+                                                <span className="text-gray-500 text-xs">{v.meaning}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Dialogue History */}
+                            <div className="chat-container">
+                                {dialogueHistory.map((line, idx) => (
+                                    <div key={idx} className={`flex flex-col ${line.type === 'player' ? 'items-end' : 'items-start'} animate-slide-in`}>
+                                        <span className="speaker-name">{line.speaker}</span>
+                                        <div className={`chat-bubble ${line.type === 'player' ? 'chat-right' : 'chat-left'}`}>
+                                            {line.text}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={messagesEndRef} />
+                            </div>
+                        </div>
+
+                        {/* Bottom Actions Area */}
+                        <div className="p-4 bg-white border-t border-gray-100 shrink-0">
+                            {/* Feedback */}
+                            {feedback && (
+                                <div className={`mb-3 p-3 rounded-xl flex items-start gap-3 text-sm animate-fade-in ${
+                                    feedback.type === 'correct' ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100'
+                                }`}>
+                                    {feedback.type === 'correct' ? <CheckCircle className="w-5 h-5 shrink-0 text-green-500" /> : <XCircle className="w-5 h-5 shrink-0 text-red-500" />}
+                                    <div>
+                                        <p className="font-bold">
+                                            {feedback.type === 'correct' ? '回答正确！' : '再试一次...'}
+                                        </p>
+                                        <p className="text-xs mt-1 opacity-90">{feedback.message}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Options or Next Button */}
+                            {feedback?.type === 'correct' ? (
+                                <button 
+                                    onClick={nextStep}
+                                    className="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-gray-200"
+                                >
+                                    {internalStep < currentSection.stages.length - 1 ? "继续对话" : "下一节"} <ArrowRight className="w-4 h-4" />
+                                </button>
+                            ) : (
+                                <div className="space-y-2.5">
+                                    {currentDialogueStep?.options.map((option, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleOptionClick(option, idx)}
+                                            className={`w-full p-3.5 rounded-xl text-left border-2 transition-all text-sm font-medium ${
+                                                feedback?.type === 'incorrect' && idx === selectedOptionIdx
+                                                    ? 'border-red-200 bg-red-50 text-red-800'
+                                                    : 'border-gray-100 bg-white hover:border-pink-200 hover:bg-pink-50 text-gray-700'
+                                            }`}
+                                        >
+                                            {option.text}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
